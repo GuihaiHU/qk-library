@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/gogf/gf/util/gconv"
+	"github.com/iWinston/qk-library/qfile"
 )
 
 type Pics []string

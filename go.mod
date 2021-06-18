@@ -1,4 +1,4 @@
-module github.com/iWinston/qk-library.git
+module github.com/iWinston/qk-library
 
 go 1.15
 
