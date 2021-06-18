@@ -1,4 +1,4 @@
-package restful
+package q
 
 import (
 	"gorm.io/gorm"

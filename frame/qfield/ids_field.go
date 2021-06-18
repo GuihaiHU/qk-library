@@ -1,4 +1,4 @@
-package field
+package qfield
 
 import (
 	"database/sql/driver"

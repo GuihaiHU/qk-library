@@ -1,4 +1,4 @@
-package utils
+package qutil
 
 import (
 	"crypto/hmac"

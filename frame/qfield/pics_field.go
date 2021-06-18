@@ -1,10 +1,8 @@
-package field
+package qfield
 
 import (
 	"database/sql/driver"
 	"encoding/json"
-
-	"codeup.aliyun.com/sevenfifteen/sevenfifteenBoilerplate/go-library/file"
 
 	"github.com/gogf/gf/util/gconv"
 )
@@ -28,7 +26,7 @@ func (p *Pics) Scan(data interface{}) error {
 	if p != nil {
 		pArr := *p
 		for i := 0; i < len(pArr); i++ {
-			pArr[i] = file.GetImgURL(pArr[i])
+			pArr[i] = qfile.GetImgURL(pArr[i])
 		}
 	}
 	return nil

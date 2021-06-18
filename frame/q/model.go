@@ -1,4 +1,4 @@
-package restful
+package q
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 
 	"strings"
 
-	"codeup.aliyun.com/sevenfifteen/sevenfifteenBoilerplate/go-library/utils"
 	"github.com/gogf/gf/util/gconv"
 	"gorm.io/gorm"
 )
@@ -50,7 +49,7 @@ func GenSqlByParam(sql *gorm.DB, param interface{}) *gorm.DB {
 			columnName, relation = getColumnNameAndRelation(sql, itemType.Name, "") // 默认值
 		)
 		// 此处是默认所有的Dto都是指针类型或者数组
-		if utils.IsZeroOfUnderlyingType(itemValue) {
+		if qutil.IsZeroOfUnderlyingType(itemValue) {
 			continue
 		}
 

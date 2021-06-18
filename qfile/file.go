@@ -1,4 +1,4 @@
-package file
+package qfile
 
 import "github.com/gogf/gf/frame/g"
 

@@ -1,6 +1,8 @@
-package field
+package qfield
 
-import "codeup.aliyun.com/sevenfifteen/sevenfifteenBoilerplate/go-library/file"
+import (
+	"github.com/iWinston/qk-library/qfile"
+)
 
 type Pic string
 
@@ -8,7 +10,7 @@ type Pic string
 func (p *Pic) Scan(value interface{}) (err error) {
 	if value != nil {
 		str := string(value.([]byte))
-		url := file.GetImgURL(str)
+		url := qfile.GetImgURL(str)
 		*p = Pic(url)
 	}
 	return
