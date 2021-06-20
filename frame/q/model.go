@@ -104,7 +104,7 @@ func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (colum
 
 	// 长度1代表是自定义字段名
 	if len == 1 {
-		columnName = tableName + "." + sql.NamingStrategy.ColumnName("", arr[0])
+		columnName = tableName + "." + sql.NamingStrategy.ColumnName("", arr[0]) + " AS " + fieldName
 	}
 	// 长度2代表是连表字段
 	if len == 2 {
