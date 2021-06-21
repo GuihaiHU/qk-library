@@ -1,7 +1,6 @@
 package q
 
 import (
-	"fmt"
 	"reflect"
 
 	"strings"
@@ -27,6 +26,10 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 			selectItem, relation = getColumnNameAndRelation(sql, item.Name, selectTag)
 		)
 
+		if selectItem == "" {
+			continue
+		}
+
 		if relation != "" {
 			genJoinByRelation(sql, relation)
 			selectItem = selectTag + " as " + item.Name
@@ -34,7 +37,7 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 
 		selects = append(selects, selectItem)
 	}
-	return sql.Debug().Select(selects[0], selects[1:]...)
+	return sql.Select(selects[0], selects[1:]...)
 }
 
 // 默认是相等的条件，_代表不筛选此字段
@@ -119,19 +122,19 @@ func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (colum
 }
 
 func genJoinByRelation(sql *gorm.DB, relation string) {
-	tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
-	relationTableName := sql.NamingStrategy.TableName(relation)
-	joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id` AND `%s`.`deleted_at` IS NULL", relationTableName, relation, tableName, relationTableName, relation, relation)
+	// tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
+	// relationTableName := sql.NamingStrategy.TableName(relation)
+	// joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id` AND `%s`.`deleted_at` IS NULL", relationTableName, relation, tableName, relationTableName, relation, relation)
 	isContains := false
 	for _, join := range sql.Statement.Joins {
 		// TODO: 支持排除多种join模式
-		if join.Name == relation || join.Name == joinName {
+		if join.Name == relation {
 			isContains = true
 			break
 		}
 	}
 	if !isContains {
-		sql.Joins(joinName)
+		sql.Joins(relation)
 	}
 }
 
