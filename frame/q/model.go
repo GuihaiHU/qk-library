@@ -16,6 +16,10 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 		selects []interface{}
 	)
 	resType := reflect.TypeOf(res).Elem() //通过反射获取type定义
+	// 传的是数组则再获取数组里的struct
+	if resType.Kind() == reflect.Slice {
+		resType = resType.Elem()
+	}
 	for i := 0; i < resType.NumField(); i++ {
 		var (
 			item                 = resType.Field(i)

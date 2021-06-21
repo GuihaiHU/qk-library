@@ -1,44 +1,50 @@
 package q
 
 import (
+	"github.com/gogf/gf/util/gconv"
 	"gorm.io/gorm"
 )
 
-func TakeOne(sql *gorm.DB, id uint, res interface{}) error {
-	if result := sql.Take(res, id); result.Error != nil {
-		return result.Error
-	} else {
-		return nil
-	}
+func FindOne(tx *gorm.DB, param interface{}, res interface{}) error {
+	GenSqlByParam(tx, param)
+	GenSqlByRes(tx, res)
+	return tx.Take(res).Error
 }
 
-func CreateOne(sql *gorm.DB, modelToCreate interface{}) error {
-	if result := sql.Create(modelToCreate); result.Error != nil {
-		return result.Error
-	}
-	return nil
+func CreateOne(tx *gorm.DB, m interface{}, param interface{}) error {
+	gconv.Struct(param, m)
+	return tx.Create(m).Error
 }
 
-func PatchOne(sql *gorm.DB, id uint, modelToPatch interface{}) error {
-	if result := sql.Save(modelToPatch); result.Error != nil {
-		return result.Error
+func PatchOne(tx *gorm.DB, m interface{}, param interface{}) error {
+	GenSqlByParam(tx, param)
+	err := tx.Take(m).Error
+	if err != nil {
+		return err
 	}
-	return nil
+	gconv.Struct(param, m)
+	return tx.Save(m).Error
 }
 
-func DeleteOne(sql *gorm.DB, id uint, modelToDelete interface{}) error {
-	if result := sql.Delete(modelToDelete); result.Error != nil {
-		return result.Error
+func DeleteOne(tx *gorm.DB, m interface{}, param interface{}) error {
+	GenSqlByParam(tx, param)
+	err := tx.Take(m).Error
+	if err != nil {
+		return err
 	}
-	return nil
+	return tx.Delete(m).Error
 }
 
-func Find(sql *gorm.DB, param interface{}, res interface{}) error {
-	if result := sql.
+func Find(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
+	countSql := GenSqlByParam(tx, param)
+	if result := countSql.Count(total); result.Error != nil {
+		return result.Error
+	}
+
+	GenSqlByParam(tx, param)
+	GenSqlByRes(tx, res)
+
+	return tx.
 		Scopes(Paginate(param)).
-		Find(res); result.Error != nil {
-		return result.Error
-	} else {
-		return nil
-	}
+		Find(res).Error
 }
