@@ -1,6 +1,8 @@
 package qfield
 
-import "github.com/iWinston/qk-library/qfile"
+import (
+	"github.com/iWinston/qk-library/qfile"
+)
 
 type Pic string
 

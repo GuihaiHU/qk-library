@@ -3,8 +3,6 @@ package qfield
 import (
 	"database/sql/driver"
 	"encoding/json"
-
-	"github.com/gogf/gf/util/gconv"
 )
 
 type Ids []uint
@@ -12,14 +10,17 @@ type Ids []uint
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
 func (p Ids) Value() (driver.Value, error) {
+	// Scan 方法存在bug，null的时候并不会触发，所以在存的时候设置默认值
+	if p == nil {
+		p = []uint{}
+	}
 	return json.Marshal(p)
 }
 
 // Scan 实现方法
 func (p *Ids) Scan(data interface{}) error {
-	ids := []byte{}
-	gconv.Scan(data, &ids)
-	return json.Unmarshal(ids, &p)
+	json.Unmarshal(data.([]byte), p)
+	return nil
 }
 
 // 转回原始类型

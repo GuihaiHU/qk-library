@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 
-	"github.com/gogf/gf/util/gconv"
 	"github.com/iWinston/qk-library/qfile"
 )
 
@@ -13,14 +12,15 @@ type Pics []string
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
 func (p Pics) Value() (driver.Value, error) {
+	if p == nil {
+		p = []string{}
+	}
 	return json.Marshal(p)
 }
 
 // Scan 实现方法
 func (p *Pics) Scan(data interface{}) error {
-	pics := []byte{}
-	gconv.Scan(data, &pics)
-	err := json.Unmarshal(pics, &p)
+	err := json.Unmarshal(data.([]byte), &p)
 	if err != nil {
 		return err
 	}

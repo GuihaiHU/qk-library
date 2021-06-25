@@ -12,6 +12,9 @@ type Strings []string
 // gorm 自定义结构需要实现 Value Scan 两个方法
 // Value 实现方法
 func (p Strings) Value() (driver.Value, error) {
+	if p == nil {
+		p = []string{}
+	}
 	return json.Marshal(p)
 }
 
