@@ -23,7 +23,7 @@ func PatchOne(tx *gorm.DB, m interface{}, param interface{}) error {
 		return err
 	}
 	gconv.Struct(param, m)
-	return tx.Save(m).Error
+	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(m).Error
 }
 
 func DeleteOne(tx *gorm.DB, m interface{}, param interface{}) error {
