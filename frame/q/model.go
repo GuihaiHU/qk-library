@@ -32,7 +32,7 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 
 		if relation != "" {
 			genJoinByRelation(sql, relation)
-			selectItem = selectTag + " as " + item.Name
+			selectItem = selectItem + " as " + item.Name
 		}
 
 		selects = append(selects, selectItem)
@@ -115,7 +115,7 @@ func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (colum
 	}
 	// 长度2代表是连表字段
 	if len == 2 {
-		columnName = tag
+		columnName = arr[0] + "." + sql.NamingStrategy.ColumnName(arr[0], arr[1])
 		relation = arr[0]
 	}
 	return
@@ -127,8 +127,7 @@ func genJoinByRelation(sql *gorm.DB, relation string) {
 	// joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id` AND `%s`.`deleted_at` IS NULL", relationTableName, relation, tableName, relationTableName, relation, relation)
 	isContains := false
 	for _, join := range sql.Statement.Joins {
-		// TODO: 支持排除多种join模式
-		if join.Name == relation {
+		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" On") {
 			isContains = true
 			break
 		}

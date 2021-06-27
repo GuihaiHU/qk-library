@@ -36,11 +36,18 @@ func DeleteOne(tx *gorm.DB, m interface{}, param interface{}) error {
 }
 
 func Find(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
-	countSql := GenSqlByParam(tx, param)
-	if result := countSql.Count(total); result.Error != nil {
-		return result.Error
+	if err := Count(tx, param, total); err != nil {
+		return err
 	}
+	return FindWithPaginate(tx, param, res)
+}
 
+func Count(tx *gorm.DB, param interface{}, total *int64) error {
+	GenSqlByParam(tx, param)
+	return tx.Count(total).Error
+}
+
+func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
 
