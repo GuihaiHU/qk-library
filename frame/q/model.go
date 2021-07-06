@@ -1,6 +1,7 @@
 package q
 
 import (
+	"errors"
 	"reflect"
 
 	"strings"
@@ -147,4 +148,25 @@ func Paginate(req interface{}) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+// MustFirst 如果查找失败，panic
+func MustFirst(tx *gorm.DB, err error, dest interface{}, conds ...interface{}) *gorm.DB {
+	result := tx.First(dest, conds...)
+	if err := result.Error; err != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			panic(err.Error())
+		}
+	}
+	return result
+}
+
+// MustCreate 如果cond查找结果为0，则保存dest，否则panic
+func MustCreate(tx *gorm.DB, err error, dest interface{}, cond interface{}) *gorm.DB {
+	var oldNum int64 = 0
+	tx.Model(dest).Where(cond).Count(&oldNum)
+	if oldNum != 0 {
+		panic(err.Error())
+	}
+	return tx.Create(dest)
 }
