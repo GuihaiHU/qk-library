@@ -43,26 +43,3 @@ func AssignParamFormReq(r *ghttp.Request, param interface{}) {
 		}
 	}
 }
-func ResponseWithTotal(r *ghttp.Request, err error, data interface{}, total int64) {
-	if err != nil {
-		JsonExit(r, 1, err.Error())
-	} else {
-		JsonExit(r, 0, "ok", data, total)
-	}
-}
-
-func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
-	if err != nil {
-		JsonExit(r, 1, err.Error())
-	} else {
-		JsonExit(r, 0, "ok", data)
-	}
-}
-
-func Response(r *ghttp.Request, err error) {
-	if err != nil {
-		JsonExit(r, 1, err.Error())
-	} else {
-		JsonExit(r, 0, "ok")
-	}
-}
