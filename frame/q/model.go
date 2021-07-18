@@ -63,7 +63,7 @@ func GenSqlByParam(sql *gorm.DB, param interface{}) *gorm.DB {
 			whereTagArr          = strings.Split(whereTag, ";")
 			columnName, relation = getColumnNameAndRelation(sql, itemType.Name, "") // 默认值
 		)
-		// 此处是默认所有的Dto都是指针类型或者数组
+		// 此处是默认所有的Dto都是指针类型,结构体或者数组
 		if qutil.IsZeroOfUnderlyingType(itemValue) {
 			continue
 		}

@@ -4,6 +4,30 @@ import (
 	"github.com/gogf/gf/net/ghttp"
 )
 
+func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64) {
+	if err != nil {
+		JsonExit(r, 1, err.Error())
+	} else {
+		JsonExit(r, 0, "ok", data, total)
+	}
+}
+
+func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
+	if err != nil {
+		JsonExit(r, 1, err.Error())
+	} else {
+		JsonExit(r, 0, "ok", data)
+	}
+}
+
+func Response(r *ghttp.Request, err error) {
+	if err != nil {
+		JsonExit(r, 1, err.Error())
+	} else {
+		JsonExit(r, 0, "ok")
+	}
+}
+
 // 数据返回通用JSON数据结构
 type JsonResponse struct {
 	Code    int         `json:"code"`    // 错误码((0:成功, 1:失败, >1:错误码))
@@ -11,15 +35,15 @@ type JsonResponse struct {
 	Data    interface{} `json:"data"`    // 返回数据(业务接口定义具体数据结构)
 }
 
-type Meta struct {
+type ResMeta struct {
 	Total    int64 `json:"total"`
 	Current  int64 `json:"current"`
 	PageSize int64 `json:"pageSize"`
 }
 
 // 数据返回通用JSON数据结构(带分页)
-type JsonResponseWithTotal struct {
-	Meta Meta `json:"meta"`
+type JsonResponseWithMeta struct {
+	Meta ResMeta `json:"meta"`
 	JsonResponse
 }
 
@@ -38,7 +62,7 @@ func Json(r *ghttp.Request, code int, message string, data ...interface{}) {
 	if len(data) > 1 {
 		r.Response.WriteJson(JsonResponseWithTotal{
 			JsonResponse: jsonResponse,
-			Meta: Meta{
+			Meta: ResMeta{
 				Total:    data[1].(int64),
 				Current:  r.GetQueryInt64("current"),
 				PageSize: r.GetQueryInt64("pageSize"),

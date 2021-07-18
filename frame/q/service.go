@@ -5,18 +5,18 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindOne(tx *gorm.DB, param interface{}, res interface{}) error {
+func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
 	return tx.Take(res).Error
 }
 
-func CreateOne(tx *gorm.DB, m interface{}, param interface{}) error {
+func Post(tx *gorm.DB, m interface{}, param interface{}) error {
 	gconv.Struct(param, m)
 	return tx.Create(m).Error
 }
 
-func PatchOne(tx *gorm.DB, m interface{}, param interface{}) error {
+func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
 	GenSqlByParam(tx, param)
 	err := tx.Take(m).Error
 	if err != nil {
@@ -26,7 +26,7 @@ func PatchOne(tx *gorm.DB, m interface{}, param interface{}) error {
 	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(m).Error
 }
 
-func DeleteOne(tx *gorm.DB, m interface{}, param interface{}) error {
+func Delete(tx *gorm.DB, m interface{}, param interface{}) error {
 	GenSqlByParam(tx, param)
 	err := tx.Take(m).Error
 	if err != nil {
@@ -35,7 +35,7 @@ func DeleteOne(tx *gorm.DB, m interface{}, param interface{}) error {
 	return tx.Delete(m).Error
 }
 
-func Find(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
+func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
 	if err := Count(tx, param, total); err != nil {
 		return err
 	}
