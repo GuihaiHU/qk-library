@@ -61,12 +61,6 @@ func (d *Domain) Register(c *DomainCmdService) {
 
 // GenHandle 产生帮助函数
 func (d *Domain) Run() {
-	defer func() {
-		if p := recover(); p != nil {
-			red(fmt.Sprintf("执行失败:%v", p))
-			d.Help()
-		}
-	}()
 	if action, ok := d.Actions[gcmd.GetArg(3)]; ok {
 		parserConfig := g.MapStrBool{}
 		for i := range action.Params {

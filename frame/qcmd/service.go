@@ -11,6 +11,10 @@ type DomainCmdService struct {
 	HelpInfo string
 }
 
+func (c *DomainCmdService) AddDomain(domain ...Domain) {
+	c.Domains = append(c.Domains, domain...)
+}
+
 // Run 发布命令
 func (c *DomainCmdService) Run() {
 	domain := gcmd.GetArg(2)
