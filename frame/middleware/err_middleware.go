@@ -30,7 +30,9 @@ func ErrorHandler(r *ghttp.Request) {
 
 		// 普通panic
 		errDetail := fmt.Sprintf("%+v", err)
-		go notify.Notify(g.Cfg().GetString("server.NodeName") + ":\n" + errDetail)
+		if g.Cfg().GetString("server.Mode") != "dev" {
+			go notify.Notify(g.Cfg().GetString("server.NodeName") + ":\n" + errDetail)
+		}
 		g.Log("exception").Error(errDetail)
 		//返回固定的友好信息
 		r.Response.ClearBuffer()

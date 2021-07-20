@@ -60,7 +60,7 @@ func Json(r *ghttp.Request, code int, message string, data ...interface{}) {
 	}
 
 	if len(data) > 1 {
-		r.Response.WriteJson(JsonResponseWithTotal{
+		r.Response.WriteJson(JsonResponseWithMeta{
 			JsonResponse: jsonResponse,
 			Meta: ResMeta{
 				Total:    data[1].(int64),

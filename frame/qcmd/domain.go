@@ -56,17 +56,11 @@ func (s *Domain) parseParam(parser *gcmd.Parser, action Action) g.MapStrStr {
 
 // Register
 func (d *Domain) Register(c *DomainCmdService) {
-	c.HelpInfo += c.HelpInfo + fmt.Sprintf("%s\t%s", d.DomainName, d.Description)
+	c.HelpInfo = c.HelpInfo + fmt.Sprintf("%s\t%s\n", d.DomainName, d.Description)
 }
 
 // GenHandle 产生帮助函数
 func (d *Domain) Run() {
-	defer func() {
-		if p := recover(); p != nil {
-			red(fmt.Sprintf("执行失败:%v", p))
-			d.Help()
-		}
-	}()
 	if action, ok := d.Actions[gcmd.GetArg(3)]; ok {
 		parserConfig := g.MapStrBool{}
 		for i := range action.Params {
@@ -81,7 +75,7 @@ func (d *Domain) Run() {
 		params := d.parseParam(parser, action)
 		err = action.Handler(params)
 		if err != nil {
-			red(gcmd.GetArgAll(), gcmd.GetOptAll(), err.Error())
+			red(gcmd.GetArgAll(), gcmd.GetOptAll(), err)
 			d.Help()
 		} else {
 			green("操作成功")

@@ -11,8 +11,13 @@ type DomainCmdService struct {
 	HelpInfo string
 }
 
+func (c *DomainCmdService) AddDomain(domain ...Domain) {
+	c.Domains = append(c.Domains, domain...)
+}
+
 // Run 发布命令
 func (c *DomainCmdService) Run() {
+	c.HelpInfo = "USAGE: go run main.go domain ${领域}\n领域\t描述\n-----------------\n"
 	domain := gcmd.GetArg(2)
 	for _, d := range c.Domains {
 		d.Register(c)
@@ -21,10 +26,13 @@ func (c *DomainCmdService) Run() {
 			return
 		}
 	}
+	if domain == "" {
+		c.Help()
+		return
+	}
 	panic("不存在domain:" + domain)
 }
 
 func (c *DomainCmdService) Help() {
-	fmt.Print("go run main.go domain 参数")
 	fmt.Print(c.HelpInfo)
 }

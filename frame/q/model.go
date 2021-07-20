@@ -38,6 +38,12 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 
 		selects = append(selects, selectItem)
 	}
+	if selects == nil {
+		return sql
+	}
+	if len(selects) == 1 {
+		return sql.Select(selects[0])
+	}
 	return sql.Select(selects[0], selects[1:]...)
 }
 
@@ -151,11 +157,11 @@ func Paginate(req interface{}) func(db *gorm.DB) *gorm.DB {
 }
 
 // MustFirst 如果查找失败，panic
-func MustFirst(tx *gorm.DB, err error, dest interface{}, conds ...interface{}) *gorm.DB {
+func MustFirst(tx *gorm.DB, tipError error, dest interface{}, conds ...interface{}) *gorm.DB {
 	result := tx.First(dest, conds...)
 	if err := result.Error; err != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			panic(err.Error())
+			panic(tipError.Error())
 		}
 	}
 	return result
