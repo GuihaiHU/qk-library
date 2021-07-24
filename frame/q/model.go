@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/util/gconv"
 	"github.com/iWinston/qk-library/qutil"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
@@ -105,6 +106,9 @@ func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (colum
 		arr       = strings.Split(tag, ".")
 		len       = len(arr)
 	)
+	if tabler, ok := sql.Statement.Model.(schema.Tabler); ok {
+		tableName = tabler.TableName()
+	}
 
 	// 为空代表没有tag，默认值是结构体的字段名
 	if tag == "" {
