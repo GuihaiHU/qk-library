@@ -14,7 +14,9 @@ import (
 
 func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 	var (
-		selects []interface{}
+		joins    []string
+		preloads []string
+		selects  []interface{}
 	)
 	resType := reflect.TypeOf(res).Elem() //通过反射获取type定义
 	// 传的是数组则再获取数组里的struct
@@ -26,26 +28,45 @@ func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
 			item                 = resType.Field(i)
 			selectTag            = item.Tag.Get("select")
 			selectItem, relation = getColumnNameAndRelation(sql, item.Name, selectTag)
+			preloadTag, ok       = item.Tag.Lookup("preload")
 		)
 
+		// select:"_"
 		if selectItem == "" {
 			continue
 		}
 
 		if relation != "" {
-			genJoinByRelation(sql, relation)
+			joins = append(joins, relation)
 			selectItem = selectItem + " as " + item.Name
 		}
-
 		selects = append(selects, selectItem)
+
+		if ok {
+			if preloadTag == "" {
+				preloads = append(preloads, item.Name)
+			} else {
+				preloads = append(preloads, preloadTag)
+			}
+		}
 	}
-	if selects == nil {
-		return sql
+	if len(preloads) != 0 {
+		for _, preload := range preloads {
+			sql.Preload(preload)
+		}
+	} else {
+		for _, join := range joins {
+			genJoinByRelation(sql, join)
+		}
+		if selects == nil {
+			return sql
+		}
+		if len(selects) == 1 {
+			return sql.Select(selects[0])
+		}
+		sql.Select(selects[0], selects[1:]...)
 	}
-	if len(selects) == 1 {
-		return sql.Select(selects[0])
-	}
-	return sql.Select(selects[0], selects[1:]...)
+	return sql
 }
 
 // 默认是相等的条件，_代表不筛选此字段
