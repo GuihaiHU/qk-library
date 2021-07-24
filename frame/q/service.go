@@ -1,6 +1,8 @@
 package q
 
 import (
+	"reflect"
+
 	"github.com/gogf/gf/util/gconv"
 	"gorm.io/gorm"
 )
@@ -63,9 +65,11 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Find(res).Error
 	} else {
-		if err := tx.Find(tx.Statement.Model).Error; err != nil {
+		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
+		arr := reflect.New(arrType).Interface()
+		if err := tx.Find(arr).Error; err != nil {
 			return err
 		}
-		return gconv.StructDeep(tx.Statement.Model, res)
+		return gconv.ScanDeep(arr, res)
 	}
 }
