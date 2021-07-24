@@ -8,7 +8,14 @@ import (
 func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
-	return tx.Take(res).Error
+	if len(tx.Statement.Preloads) == 0 {
+		return tx.Take(res).Error
+	} else {
+		if err := tx.Take(tx.Statement.Model).Error; err != nil {
+			return err
+		}
+		return gconv.StructDeep(tx.Statement.Model, res)
+	}
 }
 
 func Post(tx *gorm.DB, m interface{}, param interface{}) error {
@@ -51,7 +58,14 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
 
-	return tx.
-		Scopes(Paginate(param)).
-		Find(res).Error
+	tx.Scopes(Paginate(param))
+
+	if len(tx.Statement.Preloads) == 0 {
+		return tx.Find(res).Error
+	} else {
+		if err := tx.Find(tx.Statement.Model).Error; err != nil {
+			return err
+		}
+		return gconv.StructDeep(tx.Statement.Model, res)
+	}
 }
