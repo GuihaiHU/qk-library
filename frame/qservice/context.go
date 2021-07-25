@@ -32,7 +32,7 @@ func (s *reqContextService) Get(ctx context.Context) *model.ReqContext {
 }
 
 // 获得上下文变量，如果没有设置，那么返回nil
-func (s *reqContextService) GetByRequest(r *ghttp.Request) *model.reqContext {
+func (s *reqContextService) GetByRequest(r *ghttp.Request) *model.ReqContext {
 	return s.Get(r.Context())
 }
 
