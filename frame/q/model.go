@@ -184,7 +184,7 @@ func Paginate(req interface{}) func(db *gorm.DB) *gorm.DB {
 }
 
 // MustFirstExit 如果查找失败，退出请求
-func MustFirstExit(ctx *qmodel.QContext, errorTip string, dest interface{}, conds ...interface{}) *gorm.DB {
+func MustFirstExit(ctx *qmodel.ReqContext, errorTip string, dest interface{}, conds ...interface{}) *gorm.DB {
 	result := ctx.TX.First(dest, conds...)
 	if err := result.Error; err != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -206,7 +206,7 @@ func MustFirst(tx *gorm.DB, tipError error, dest interface{}, conds ...interface
 }
 
 // MustCreateExit 如果cond查找结果为0，则保存dest，否则退出请求
-func MustCreateExit(ctx *qmodel.QContext, errorTip string, dest interface{}, cond interface{}) *gorm.DB {
+func MustCreateExit(ctx *qmodel.ReqContext, errorTip string, dest interface{}, cond interface{}) *gorm.DB {
 	var oldNum int64 = 0
 	ctx.TX.Model(dest).Where(cond).Count(&oldNum)
 	if oldNum != 0 {
