@@ -15,17 +15,17 @@ var ReqContext = new(reqContextService)
 type reqContextService struct{}
 
 // 初始化上下文对象指针到上下文对象中，以便后续的请求流程中可以修改。
-func (s *reqContextService) Init(r *ghttp.Request, ctx *model.reqContext) {
+func (s *reqContextService) Init(r *ghttp.Request, ctx *model.ReqContext) {
 	r.SetCtxVar(model.ContextKey, ctx)
 }
 
 // 获得上下文变量，如果没有设置，那么返回nil
-func (s *reqContextService) Get(ctx context.Context) *model.reqContext {
+func (s *reqContextService) Get(ctx context.Context) *model.ReqContext {
 	value := ctx.Value(model.ContextKey)
 	if value == nil {
 		return nil
 	}
-	if localCtx, ok := value.(*model.reqContext); ok {
+	if localCtx, ok := value.(*model.ReqContext); ok {
 		return localCtx
 	}
 	return nil
