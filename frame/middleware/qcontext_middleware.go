@@ -12,12 +12,12 @@ import (
 
 func GenRequestContextMiddleware(DB *gorm.DB) func(r *ghttp.Request) {
 	return func(r *ghttp.Request) {
-		requestCtx := &qmodel.QContext{
+		requestCtx := &qmodel.ReqContext{
 			Request: r,
 			DB:      DB,
 			Data:    make(g.Map),
 		}
-		qservice.QContext.Init(r, requestCtx)
+		qservice.ReqContext.Init(r, requestCtx)
 		r.Middleware.Next()
 	}
 }

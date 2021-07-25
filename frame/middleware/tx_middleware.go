@@ -8,10 +8,10 @@ import (
 
 // 事务
 func TX(r *ghttp.Request) {
-	db := service.QContext.GetDB(r.Context())
+	db := service.ReqContext.GetDB(r.Context())
 	db.Transaction(func(tx *gorm.DB) error {
-		service.QContext.SetTX(r.Context(), tx)
+		service.ReqContext.SetTX(r.Context(), tx)
 		r.Middleware.Next()
-		return service.QContext.GetError(r.Context())
+		return service.ReqContext.GetError(r.Context())
 	})
 }
