@@ -6,7 +6,9 @@ import (
 
 	"strings"
 
+	"github.com/gogf/gf/errors/gerror"
 	"github.com/gogf/gf/util/gconv"
+	"github.com/iWinston/qk-library/frame/qmodel"
 	"github.com/iWinston/qk-library/qutil"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -181,6 +183,17 @@ func Paginate(req interface{}) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+// MustFirstExit 如果查找失败，退出请求
+func MustFirstExit(ctx *qmodel.QContext, errorTip string, dest interface{}, conds ...interface{}) *gorm.DB {
+	result := ctx.TX.First(dest, conds...)
+	if err := result.Error; err != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			Response(ctx.Request, gerror.New(errorTip))
+		}
+	}
+	return result
+}
+
 // MustFirst 如果查找失败，panic
 func MustFirst(tx *gorm.DB, tipError error, dest interface{}, conds ...interface{}) *gorm.DB {
 	result := tx.First(dest, conds...)
@@ -190,6 +203,16 @@ func MustFirst(tx *gorm.DB, tipError error, dest interface{}, conds ...interface
 		}
 	}
 	return result
+}
+
+// MustCreateExit 如果cond查找结果为0，则保存dest，否则退出请求
+func MustCreateExit(ctx *qmodel.QContext, errorTip string, dest interface{}, cond interface{}) *gorm.DB {
+	var oldNum int64 = 0
+	ctx.TX.Model(dest).Where(cond).Count(&oldNum)
+	if oldNum != 0 {
+		Response(ctx.Request, gerror.New(errorTip))
+	}
+	return ctx.TX.Create(dest)
 }
 
 // MustCreate 如果cond查找结果为0，则保存dest，否则panic
