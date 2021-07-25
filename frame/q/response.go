@@ -1,7 +1,7 @@
 package q
 
 import (
-	service "github.com/iWinston/qk-library/frame/service"
+	"github.com/iWinston/qk-library/frame/qservice"
 
 	"github.com/gogf/gf/net/ghttp"
 )
@@ -24,7 +24,7 @@ func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 
 func Response(r *ghttp.Request, err error) {
 	if err != nil {
-		service.RequestContext.SetError(r.Context(), err)
+		qservice.QContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
 		JsonExit(r, 0, "ok")
