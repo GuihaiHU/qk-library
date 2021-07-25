@@ -17,7 +17,11 @@ func GetIdFormReq(r *ghttp.Request) (id uint) {
 func AssignParamFormReq(r *ghttp.Request, param interface{}) {
 	// 先从入参中获取
 	if err := r.Parse(param); err != nil {
-		JsonExit(r, 1, err.Error())
+		if reflect.TypeOf(err).Elem().Name() == "validationError" {
+			JsonExit(r, 400, err.Error())
+		} else {
+			panic(err.Error())
+		}
 	}
 
 	dtoType := reflect.TypeOf(param).Elem()
