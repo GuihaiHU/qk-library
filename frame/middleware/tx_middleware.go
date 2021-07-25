@@ -1,18 +1,17 @@
 package middleware
 
 import (
-	"github.com/iWinston/qk-library/frame/service"
-
 	"github.com/gogf/gf/net/ghttp"
+	service "github.com/iWinston/qk-library/frame/qservice"
 	"gorm.io/gorm"
 )
 
 // 事务
 func TX(r *ghttp.Request) {
-	db := service.RequestContext.GetDB(r.Context())
+	db := service.QContext.GetDB(r.Context())
 	db.Transaction(func(tx *gorm.DB) error {
-		service.RequestContext.SetTX(r.Context(), tx)
+		service.QContext.SetTX(r.Context(), tx)
 		r.Middleware.Next()
-		return service.RequestContext.GetError(r.Context())
+		return service.QContext.GetError(r.Context())
 	})
 }
