@@ -8,6 +8,7 @@ import (
 
 func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64) {
 	if err != nil {
+		qservice.QContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
 		JsonExit(r, 0, "ok", data, total)
@@ -16,6 +17,7 @@ func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64
 
 func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 	if err != nil {
+		qservice.QContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
 		JsonExit(r, 0, "ok", data)
