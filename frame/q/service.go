@@ -13,7 +13,7 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Take(res).Error
 	} else {
-		if err := tx.Take(tx.Statement.Model).Error; err != nil {
+		if err := tx.Take(tx.Statement.Model).Scan(res).Error; err != nil {
 			return err
 		}
 		return gconv.StructDeep(tx.Statement.Model, res)
@@ -52,6 +52,7 @@ func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
 }
 
 func Count(tx *gorm.DB, param interface{}, total *int64) error {
+	tx = tx.Session(&gorm.Session{})
 	GenSqlByParam(tx, param)
 	return tx.Count(total).Error
 }
@@ -67,7 +68,7 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	} else {
 		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
 		arr := reflect.New(arrType).Interface()
-		if err := tx.Find(arr).Error; err != nil {
+		if err := tx.Find(arr).Scan(res).Error; err != nil {
 			return err
 		}
 		return gconv.ScanDeep(arr, res)

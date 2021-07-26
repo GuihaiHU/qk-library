@@ -11,103 +11,176 @@ import (
 	"github.com/iWinston/qk-library/frame/qmodel"
 	"github.com/iWinston/qk-library/qutil"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
 
-func GenSqlByRes(sql *gorm.DB, res interface{}) *gorm.DB {
-	var (
-		joins    []string
-		preloads []string
-		selects  []interface{}
-	)
+type meta struct {
+	Joins    []string
+	Preloads []string
+	Selects  []string
+	Orders   []string
+	Wheres   []string
+}
+
+func GenSqlByRes(tx *gorm.DB, res interface{}) *gorm.DB {
+	var resMeta meta
 	resType := reflect.TypeOf(res).Elem() //通过反射获取type定义
+	scanRes(&resMeta, resType, tx)
+	for _, order := range resMeta.Orders {
+		tx.Order(order)
+	}
+
+	for _, preload := range resMeta.Preloads {
+		tx.Preload(preload)
+	}
+	for _, join := range resMeta.Joins {
+		genJoinByRelation(tx, join)
+	}
+	tx.Statement.Selects = resMeta.Selects
+
+	return tx
+}
+
+// 默认是相等的条件，_代表不筛选此字段
+func GenSqlByParam(tx *gorm.DB, param interface{}) *gorm.DB {
+	var (
+		paramType  = reflect.TypeOf(param).Elem() //通过反射获取type定义
+		paramValue = reflect.ValueOf(param).Elem()
+	)
+	var paramMeta meta
+	scanParam(&paramMeta, paramType, paramValue, tx)
+
+	for _, order := range paramMeta.Orders {
+		tx.Order(order)
+	}
+	return tx
+}
+
+func scanRes(resMeta *meta, resType reflect.Type, tx *gorm.DB) {
 	// 传的是数组则再获取数组里的struct
 	if resType.Kind() == reflect.Slice {
 		resType = resType.Elem()
 	}
-	for i := 0; i < resType.NumField(); i++ {
-		var (
-			item                 = resType.Field(i)
-			selectTag            = item.Tag.Get("select")
-			selectItem, relation = getColumnNameAndRelation(sql, item.Name, selectTag)
-			preloadTag, ok       = item.Tag.Lookup("preload")
-		)
 
-		// select:"_"
-		if selectItem == "" {
+	for i := 0; i < resType.NumField(); i++ {
+		item := resType.Field(i)
+		// 是匿名结构体，递归字段
+		if item.Anonymous && item.Tag.Get("select") != "_" {
+			if item.Type.Kind() == reflect.Ptr {
+				scanRes(resMeta, item.Type.Elem(), tx)
+			} else {
+				scanRes(resMeta, item.Type, tx)
+			}
 			continue
 		}
 
-		if relation != "" {
-			joins = append(joins, relation)
-			selectItem = selectItem + " as " + item.Name
-		}
-		selects = append(selects, selectItem)
+		setPreloadMeta(resMeta, item)
+		setOrderMeta(resMeta, item, tx)
 
-		if ok {
-			if preloadTag == "" {
-				preloads = append(preloads, item.Name)
-			} else {
-				preloads = append(preloads, preloadTag)
-			}
+		if !strings.Contains(item.Type.String(), "model.") {
+			setSelectMeta(resMeta, item, tx)
 		}
 	}
-	if len(preloads) != 0 {
-		for _, preload := range preloads {
-			sql.Preload(preload)
-		}
-	} else {
-		for _, join := range joins {
-			genJoinByRelation(sql, join)
-		}
-		if selects == nil {
-			return sql
-		}
-		if len(selects) == 1 {
-			return sql.Select(selects[0])
-		}
-		sql.Select(selects[0], selects[1:]...)
-	}
-	return sql
 }
 
-// 默认是相等的条件，_代表不筛选此字段
-func GenSqlByParam(sql *gorm.DB, param interface{}) *gorm.DB {
+func scanParam(meta *meta, paramType reflect.Type, paramValue reflect.Value, tx *gorm.DB) {
+	// 传的是数组则再获取数组里的struct
+	if paramType.Kind() == reflect.Slice {
+		paramType = paramType.Elem()
+	}
+
+	for i := 0; i < paramType.NumField(); i++ {
+		itemType := paramType.Field(i)
+		itemValue := paramValue.Field(i)
+		// 是匿名结构体，递归字段
+		if itemType.Anonymous && itemType.Tag.Get("select") != "_" {
+			if itemType.Type.Kind() == reflect.Ptr {
+				scanParam(meta, itemType.Type.Elem(), itemValue.Elem(), tx)
+			} else {
+				scanParam(meta, itemType.Type, itemValue, tx)
+			}
+			continue
+		}
+
+		setOrderMeta(meta, itemType, tx)
+		setWhereMeta(meta, itemType, itemValue, tx)
+	}
+}
+
+func setWhereMeta(meta *meta, itemType reflect.StructField, itemValue reflect.Value, tx *gorm.DB) {
+	// 此处是默认所有的Dto都是指针类型,结构体或者数组
+	if qutil.IsZeroOfUnderlyingType(itemValue.Interface()) {
+		return
+	}
+	// if itemType.Type.Kind() == reflect.Ptr {
+	// 	if itemValue.Elem().Interface() == "" {
+	// 		return
+	// 	}
+	// }
+
+	var tag, isTagExisted = itemType.Tag.Lookup("where")
 	var (
-		dtoType  = reflect.TypeOf(param).Elem() //通过反射获取type定义
-		dtoValue = reflect.ValueOf(param).Elem()
+		operator             = "="
+		columnName, relation = getColumnNameAndRelation(tx, itemType.Name, "")
 	)
-
-	for i := 0; i < dtoType.NumField(); i++ {
-		var (
-			itemType             = dtoType.Field(i)
-			itemValue            = dtoValue.Field(i).Interface()
-			operator             = "=" // 默认值
-			whereTag             = itemType.Tag.Get("where")
-			whereTagArr          = strings.Split(whereTag, ";")
-			columnName, relation = getColumnNameAndRelation(sql, itemType.Name, "") // 默认值
-		)
-		// 此处是默认所有的Dto都是指针类型,结构体或者数组
-		if qutil.IsZeroOfUnderlyingType(itemValue) {
-			continue
-		}
-
-		if whereTagArr[0] != "" {
-			operator = whereTagArr[0]
-		} else {
-			continue
-		}
-
-		if len(whereTagArr) == 2 {
-			columnName, relation = getColumnNameAndRelation(sql, itemType.Name, whereTagArr[1])
-			if relation != "" {
-				genJoinByRelation(sql, relation)
+	if isTagExisted {
+		if tag != "" {
+			tagArr := strings.Split(tag, ";")
+			operator = tagArr[0]
+			if len(tagArr) == 2 {
+				columnName, relation = getColumnNameAndRelation(tx, itemType.Name, tagArr[1])
+				if relation != "" {
+					meta.Joins = append(meta.Joins, relation)
+				}
 			}
 		}
-
-		genCondition(sql, columnName, operator, itemValue)
+		genCondition(tx, columnName, operator, itemValue.Interface())
 	}
-	return sql
+}
+
+func setOrderMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
+	var orderTag, isOrderTagExisted = item.Tag.Lookup("order")
+	if isOrderTagExisted {
+		if orderTag == "" {
+			orderTag = item.Name + "" + "desc"
+		} else {
+			orderTagArr := strings.Split(orderTag, ";")
+			if len(orderTagArr) == 1 {
+				columnName, _ := getColumnNameAndRelation(tx, item.Name, "")
+				orderTag = columnName + " " + orderTag
+			}
+			if len(orderTagArr) == 2 {
+				columnName, relation := getColumnNameAndRelation(tx, item.Name, orderTagArr[1])
+				orderTag = columnName + " " + orderTagArr[0]
+				if relation != "" {
+					resMeta.Joins = append(resMeta.Joins, relation)
+				}
+			}
+		}
+		resMeta.Orders = append(resMeta.Preloads, orderTag)
+	}
+}
+
+func setPreloadMeta(resMeta *meta, item reflect.StructField) {
+	var preloadTag, isPreloadTagExisted = item.Tag.Lookup("preload")
+	if isPreloadTagExisted {
+		if preloadTag == "" {
+			preloadTag = item.Name
+		}
+		resMeta.Preloads = append(resMeta.Preloads, preloadTag)
+	}
+}
+
+func setSelectMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
+	selectTag := item.Tag.Get("select")
+	if selectTag != "_" {
+		columnName, relation := getColumnNameAndRelation(tx, item.Name, selectTag)
+		selectItem := columnName + " as " + item.Name
+		resMeta.Selects = append(resMeta.Selects, selectItem)
+		if relation != "" {
+			resMeta.Joins = append(resMeta.Joins, relation)
+		}
+	}
+
 }
 
 func genCondition(sql *gorm.DB, name, operator string, itemValue interface{}) {
@@ -123,33 +196,29 @@ func genCondition(sql *gorm.DB, name, operator string, itemValue interface{}) {
 	}
 }
 
-func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (columnName string, relation string) {
+func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (columnName string, relation string) {
 	var (
-		tableName = sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
-		arr       = strings.Split(tag, ".")
-		len       = len(arr)
+		tableName = tx.NamingStrategy.TableName(reflect.TypeOf(tx.Statement.Model).Elem().Name())
+		// tableName = tx.Statement.Table
+		arr = strings.Split(tag, ".")
+		len = len(arr)
 	)
-	if tabler, ok := sql.Statement.Model.(schema.Tabler); ok {
-		tableName = tabler.TableName()
-	}
+	// if tabler, ok := tx.Statement.Model.(schema.Tabler); ok {
+	// 	tableName = tabler.TableName()
+	// }
 
 	// 为空代表没有tag，默认值是结构体的字段名
 	if tag == "" {
-		columnName = tableName + "." + sql.NamingStrategy.ColumnName("", fieldName)
+		columnName = tableName + "." + tx.NamingStrategy.ColumnName("", fieldName)
 		return
 	}
-	// _代表不需要处理这个字段
-	if tag == "_" {
-		return
-	}
-
 	// 长度1代表是自定义字段名
 	if len == 1 {
-		columnName = tableName + "." + sql.NamingStrategy.ColumnName("", arr[0]) + " AS " + fieldName
+		columnName = tableName + "." + tx.NamingStrategy.ColumnName("", arr[0])
 	}
 	// 长度2代表是连表字段
 	if len == 2 {
-		columnName = arr[0] + "." + sql.NamingStrategy.ColumnName(arr[0], arr[1])
+		columnName = arr[0] + "." + tx.NamingStrategy.ColumnName(arr[0], arr[1])
 		relation = arr[0]
 	}
 	return
@@ -157,8 +226,9 @@ func getColumnNameAndRelation(sql *gorm.DB, fieldName string, tag string) (colum
 
 func genJoinByRelation(sql *gorm.DB, relation string) {
 	// tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
+	// tableName := sql.Statement.Table
 	// relationTableName := sql.NamingStrategy.TableName(relation)
-	// joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id` AND `%s`.`deleted_at` IS NULL", relationTableName, relation, tableName, relationTableName, relation, relation)
+	// joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
 	isContains := false
 	for _, join := range sql.Statement.Joins {
 		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" On") {
