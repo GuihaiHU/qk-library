@@ -1,9 +1,11 @@
 package q
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
 )
 
@@ -20,7 +22,8 @@ func AssignParamFormReq(r *ghttp.Request, param interface{}) {
 		if reflect.TypeOf(err).Elem().Name() == "validationError" {
 			JsonExit(r, 400, err.Error())
 		} else {
-			panic(err.Error())
+			g.Log("exception").Error(fmt.Sprintf("%+v", err))
+			JsonExit(r, 500, err.Error())
 		}
 	}
 
