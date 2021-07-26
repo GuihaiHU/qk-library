@@ -63,6 +63,7 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 
 	tx.Scopes(Paginate(param))
 
+	// return tx.Find(res).Error
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Find(res).Error
 	} else {
