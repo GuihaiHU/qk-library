@@ -14,6 +14,8 @@ func OptimizeDbErr(err error) error {
 		case 1062:
 			m := regexp.MustCompile(`Duplicate entry '(.*)' for.*`).FindStringSubmatch(err.Message)
 			return gerror.New(fmt.Sprintf("%s 已存在", m[1]))
+		case 1054:
+			panic(err)
 		}
 	}
 	return err

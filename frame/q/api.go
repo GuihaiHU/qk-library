@@ -1,9 +1,11 @@
 package q
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
 )
 
@@ -17,7 +19,12 @@ func GetIdFormReq(r *ghttp.Request) (id uint) {
 func AssignParamFormReq(r *ghttp.Request, param interface{}) {
 	// 先从入参中获取
 	if err := r.Parse(param); err != nil {
-		JsonExit(r, 1, err.Error())
+		if reflect.TypeOf(err).Elem().Name() == "validationError" {
+			JsonExit(r, 400, err.Error())
+		} else {
+			g.Log("exception").Error(fmt.Sprintf("%+v", err))
+			JsonExit(r, 500, err.Error())
+		}
 	}
 
 	dtoType := reflect.TypeOf(param).Elem()
