@@ -2,6 +2,7 @@ package q
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"strings"
@@ -51,6 +52,9 @@ func GenSqlByParam(tx *gorm.DB, param interface{}) *gorm.DB {
 
 	for _, order := range paramMeta.Orders {
 		tx.Order(order)
+	}
+	for _, join := range paramMeta.Joins {
+		genJoinByRelation(tx, join)
 	}
 	return tx
 }
@@ -226,10 +230,10 @@ func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (column
 }
 
 func genJoinByRelation(sql *gorm.DB, relation string) {
-	// tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
+	tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
 	// tableName := sql.Statement.Table
-	// relationTableName := sql.NamingStrategy.TableName(relation)
-	// joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
+	relationTableName := sql.NamingStrategy.TableName(relation)
+	joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
 	isContains := false
 	for _, join := range sql.Statement.Joins {
 		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" On") {
@@ -238,7 +242,7 @@ func genJoinByRelation(sql *gorm.DB, relation string) {
 		}
 	}
 	if !isContains {
-		sql.Joins(relation)
+		sql.Joins(joinName)
 	}
 }
 
