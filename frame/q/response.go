@@ -1,7 +1,12 @@
 package q
 
 import (
+	"reflect"
+	"strings"
+	"unicode"
+
 	"github.com/iWinston/qk-library/frame/qservice"
+	"github.com/iWinston/qk-library/qutil"
 
 	"github.com/gogf/gf/net/ghttp"
 )
@@ -11,7 +16,7 @@ func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64
 		qservice.ReqContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
-		JsonExit(r, 0, "ok", data, total)
+		JsonExit(r, 0, "ok", structToLowerCamelMap(data), total)
 	}
 }
 
@@ -20,7 +25,7 @@ func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 		qservice.ReqContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
-		JsonExit(r, 0, "ok", data)
+		JsonExit(r, 0, "ok", structToLowerCamelMap(data))
 	}
 }
 
@@ -32,6 +37,44 @@ func Response(r *ghttp.Request, err error) {
 		JsonExit(r, 0, "ok")
 	}
 }
+
+func structToLowerCamelMap(data interface{}) map[string]interface{} {
+	m := qutil.StructToMap(data)
+	lowerCamelMap(m)
+	return m
+}
+
+func lowerCamelMap(m map[string]interface{}) {
+	for k, v := range m {
+		typ := reflect.TypeOf(v)
+		if typ != nil && typ.Kind() == reflect.Map {
+			lowerCamelMap(v.(map[string]interface{}))
+		}
+
+		if unicode.IsUpper(rune(k[0])) {
+			newKey := strings.ToLower(k[:1]) + k[1:]
+			m[newKey] = v
+			delete(m, k)
+		}
+	}
+}
+
+// func scanDataToAddTag(data interface{}, resType reflect.Type) {
+// 	resType = qutil.GetDeepType(resType)
+// 	for i := 0; i < resType.NumField(); i++ {
+// 		item := resType.Field(i)
+// 		// 是匿名结构体，递归字段
+// 		if item.Anonymous {
+// 			scanDataToAddTag(data, item.Type)
+// 			continue
+// 		}
+// 		tag := item.Tag.Get("json")
+// 		fmt.Println(tag)
+// 		if tag == "" {
+// 			item.Tag = `json:"test"`
+// 		}
+// 	}
+// }
 
 // 数据返回通用JSON数据结构
 type JsonResponse struct {
