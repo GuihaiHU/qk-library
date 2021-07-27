@@ -27,3 +27,12 @@ func StructToMap(s interface{}) (m g.MapStrAny) {
 	_ = json.Unmarshal(j, &m)
 	return
 }
+
+func GetDeepType(typ reflect.Type) reflect.Type {
+	resKind := typ.Kind()
+	if resKind == reflect.Array || resKind == reflect.Slice || resKind == reflect.Ptr {
+		return GetDeepType(typ.Elem())
+	} else {
+		return typ
+	}
+}
