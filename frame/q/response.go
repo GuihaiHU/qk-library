@@ -16,7 +16,7 @@ func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64
 		qservice.ReqContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
-		JsonExit(r, 0, "ok", structToLowerCamelMap(data), total)
+		JsonExit(r, 0, "ok", dataToLowerCamelMap(data), total)
 	}
 }
 
@@ -25,7 +25,7 @@ func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 		qservice.ReqContext.SetError(r.Context(), err)
 		JsonExit(r, 1, err.Error())
 	} else {
-		JsonExit(r, 0, "ok", structToLowerCamelMap(data))
+		JsonExit(r, 0, "ok", dataToLowerCamelMap(data))
 	}
 }
 
@@ -38,10 +38,17 @@ func Response(r *ghttp.Request, err error) {
 	}
 }
 
-func structToLowerCamelMap(data interface{}) map[string]interface{} {
-	m := qutil.StructToMap(data)
-	lowerCamelMap(m)
-	return m
+func dataToLowerCamelMap(data interface{}) interface{} {
+	typ := reflect.TypeOf(data).Elem()
+	if typ != nil && typ.Kind() == reflect.Slice {
+		m := qutil.SliceToMap(data)
+		lowerCamelMapArr(m)
+		return m
+	} else {
+		m := qutil.StructToMap(data)
+		lowerCamelMap(m)
+		return m
+	}
 }
 
 func lowerCamelMap(m map[string]interface{}) {
@@ -50,12 +57,21 @@ func lowerCamelMap(m map[string]interface{}) {
 		if typ != nil && typ.Kind() == reflect.Map {
 			lowerCamelMap(v.(map[string]interface{}))
 		}
+		if typ != nil && typ.Kind() == reflect.Slice {
+			lowerCamelMapArr(v.([]interface{}))
+		}
 
 		if unicode.IsUpper(rune(k[0])) {
 			newKey := strings.ToLower(k[:1]) + k[1:]
 			m[newKey] = v
 			delete(m, k)
 		}
+	}
+}
+
+func lowerCamelMapArr(ms []interface{}) {
+	for _, m := range ms {
+		lowerCamelMap(m.(map[string]interface{}))
 	}
 }
 
