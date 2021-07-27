@@ -73,10 +73,10 @@ func scanRes(resMeta *meta, resType reflect.Type, tx *gorm.DB) {
 			continue
 		}
 
-		setPreloadMeta(resMeta, item)
+		isPreloadTagExisted := setPreloadMeta(resMeta, item)
 		setOrderMeta(resMeta, item, tx)
 
-		if !strings.Contains(item.Type.String(), "model.") {
+		if !strings.Contains(item.Type.String(), "model.") && !isPreloadTagExisted {
 			setSelectMeta(resMeta, item, tx)
 		}
 	}
@@ -160,7 +160,7 @@ func setOrderMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
 	}
 }
 
-func setPreloadMeta(resMeta *meta, item reflect.StructField) {
+func setPreloadMeta(resMeta *meta, item reflect.StructField) bool {
 	var preloadTag, isPreloadTagExisted = item.Tag.Lookup("preload")
 	if isPreloadTagExisted {
 		if preloadTag == "" {
@@ -168,6 +168,7 @@ func setPreloadMeta(resMeta *meta, item reflect.StructField) {
 		}
 		resMeta.Preloads = append(resMeta.Preloads, preloadTag)
 	}
+	return isPreloadTagExisted
 }
 
 func setSelectMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
