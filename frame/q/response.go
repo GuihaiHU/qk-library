@@ -39,16 +39,21 @@ func Response(r *ghttp.Request, err error) {
 }
 
 func dataToLowerCamelMap(data interface{}) interface{} {
-	typ := reflect.TypeOf(data).Elem()
-	if typ != nil && typ.Kind() == reflect.Slice {
+	typ := reflect.TypeOf(data)
+	if typ != nil && typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if typ != nil && typ.Kind() == reflect.Slice && typ.Elem().Kind() == reflect.Struct {
 		m := qutil.SliceToMap(data)
 		lowerCamelMapArr(m)
 		return m
-	} else {
+	}
+	if typ != nil && typ.Kind() == reflect.Struct {
 		m := qutil.StructToMap(data)
 		lowerCamelMap(m)
 		return m
 	}
+	return data
 }
 
 func lowerCamelMap(m map[string]interface{}) {
@@ -71,7 +76,9 @@ func lowerCamelMap(m map[string]interface{}) {
 
 func lowerCamelMapArr(ms []interface{}) {
 	for _, m := range ms {
-		lowerCamelMap(m.(map[string]interface{}))
+		if reflect.TypeOf(m).Kind() == reflect.Map {
+			lowerCamelMap(m.(map[string]interface{}))
+		}
 	}
 }
 
