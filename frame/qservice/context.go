@@ -70,6 +70,11 @@ func (s *reqContextService) GetDB(ctx context.Context) *gorm.DB {
 	return s.Get(ctx).DB
 }
 
+// SetDB 数据库
+func (s *reqContextService) SetDB(ctx context.Context, DB *gorm.DB) {
+	s.Get(ctx).DB = DB
+}
+
 // SetError 设置报错
 func (s *reqContextService) SetData(ctx context.Context, key string, value interface{}) {
 	s.Get(ctx).Data[key] = value
