@@ -1,7 +1,6 @@
 package qutil
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
@@ -46,10 +45,10 @@ func GetDeepType(typ reflect.Type) reflect.Type {
 }
 
 func RandomStr(len int) string {
-	var result bytes.Buffer
+	result := []byte{}
 	for i := 0; i < len; i++ {
-		result.WriteString(fmt.Sprintf("%d", 65+rand.Intn(25)))
+		// result.WriteString(fmt.Sprintf("%d", 65+rand.Intn(25)))
+		result = append(result, byte(65+rand.Intn(25)))
 	}
-	return result.String()
-
+	return string(result[:])
 }
