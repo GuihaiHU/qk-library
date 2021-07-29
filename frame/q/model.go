@@ -227,17 +227,31 @@ func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (column
 }
 
 func genJoinByRelation(tx *gorm.DB, relation string) {
+	tableName := getTableName(tx)
 	model := tx.Statement.Model
 	modelType := reflect.TypeOf(model).Elem()
-	relationField, _ := modelType.FieldByName(relation)
-	relationType := qutil.GetDeepType(relationField.Type).String()
-	// gormTag := relationField.Tag.Get("gorm")
-	// fmt.Println(gormTag)
-	// fmt.Printf("tx.Statement.Schema: %v\n", tx.Statement.Schema)
+	relationField, ok := modelType.FieldByName(relation)
+	if !ok {
+		panic(fmt.Sprintf("%s 中没有 %s 关联字段", tableName, relation))
+	}
 
-	tableName := getTableName(tx)
+	relationType := qutil.GetDeepType(relationField.Type).String()
+	arr := strings.Split(relationType, ".")
+	relationType = arr[len(arr)-1]
 	relationTableName := tx.NamingStrategy.TableName(relationType)
-	joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
+
+	gormTag := relationField.Tag.Get("gorm")
+	tagMap := schema.ParseTagSetting(gormTag, ";")
+	many2manyTag := tx.NamingStrategy.TableName(tagMap["MANY2MANY"])
+
+	var joinName string
+	if many2manyTag == "" {
+		joinName = fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
+	} else {
+		joinName = fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id`=`%s`.`id` LEFT JOIN `%s` `%s` ON `%s`.`id`=`%s`.`%s_id`",
+			many2manyTag, many2manyTag, many2manyTag, tableName, tableName, relationTableName, relation, relation, many2manyTag, relationTableName)
+	}
+
 	isContains := false
 	for _, join := range tx.Statement.Joins {
 		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" ON") {
