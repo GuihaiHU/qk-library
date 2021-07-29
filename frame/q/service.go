@@ -10,11 +10,11 @@ import (
 // Find find records that match given conditions
 func Find(tx *gorm.DB, dest interface{}, conds ...interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
-		return tx.Find(dest, conds).Error
+		return tx.Find(dest, conds...).Error
 	} else {
 		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
 		arr := reflect.New(arrType).Interface()
-		if err := tx.Find(arr, conds).Scan(dest).Error; err != nil {
+		if err := tx.Find(arr, conds...).Scan(dest).Error; err != nil {
 			return err
 		}
 		return gconv.ScanDeep(arr, dest)

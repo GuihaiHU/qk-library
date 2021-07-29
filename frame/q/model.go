@@ -12,6 +12,7 @@ import (
 	"github.com/iWinston/qk-library/frame/qmodel"
 	"github.com/iWinston/qk-library/qutil"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type meta struct {
@@ -203,15 +204,11 @@ func genCondition(sql *gorm.DB, name, operator string, itemValue interface{}) {
 
 func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (columnName string, relation string) {
 	var (
-		tableName = tx.NamingStrategy.TableName(reflect.TypeOf(tx.Statement.Model).Elem().Name())
-		// tableName = tx.Statement.Table
+		tableName = getTableName(tx)
+
 		arr = strings.Split(tag, ".")
 		len = len(arr)
 	)
-	// if tabler, ok := tx.Statement.Model.(schema.Tabler); ok {
-	// 	tableName = tabler.TableName()
-	// }
-
 	// 为空代表没有tag，默认值是结构体的字段名
 	if tag == "" {
 		columnName = tableName + "." + tx.NamingStrategy.ColumnName("", fieldName)
@@ -229,23 +226,40 @@ func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (column
 	return
 }
 
-func genJoinByRelation(sql *gorm.DB, relation string) {
-	tableName := sql.NamingStrategy.TableName(reflect.TypeOf(sql.Statement.Model).Elem().Name())
-	// tableName := sql.Statement.Table
-	relationTableName := sql.NamingStrategy.TableName(relation)
+func genJoinByRelation(tx *gorm.DB, relation string) {
+	model := tx.Statement.Model
+	modelType := reflect.TypeOf(model).Elem()
+	relationField, _ := modelType.FieldByName(relation)
+	relationType := qutil.GetDeepType(relationField.Type).String()
+	// gormTag := relationField.Tag.Get("gorm")
+	// fmt.Println(gormTag)
+	// fmt.Printf("tx.Statement.Schema: %v\n", tx.Statement.Schema)
+
+	tableName := getTableName(tx)
+	relationTableName := tx.NamingStrategy.TableName(relationType)
 	joinName := fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, relationTableName, relation)
 	isContains := false
-	for _, join := range sql.Statement.Joins {
-		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" On") {
+	for _, join := range tx.Statement.Joins {
+		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" ON") {
 			isContains = true
 			break
 		}
 	}
 	if !isContains {
-		sql.Joins(joinName)
+		tx.Joins(joinName)
 	}
 }
 
+func getTableName(tx *gorm.DB) (tableName string) {
+	tableName = tx.Statement.Table
+	if tableName == "" {
+		tableName = tx.NamingStrategy.TableName(reflect.TypeOf(tx.Statement.Model).Elem().Name())
+	}
+	if tabler, ok := tx.Statement.Model.(schema.Tabler); ok {
+		tableName = tabler.TableName()
+	}
+	return
+}
 func Paginate(req interface{}) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		var page Page
