@@ -35,7 +35,9 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 }
 
 func Post(tx *gorm.DB, m interface{}, param interface{}) error {
-	gconv.Struct(param, m)
+	if err := gconv.Struct(param, m); err != nil {
+		return err
+	}
 	return tx.Create(m).Error
 }
 
@@ -45,7 +47,9 @@ func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
 	if err != nil {
 		return err
 	}
-	gconv.Struct(param, m)
+	if err := gconv.Struct(param, m); err != nil {
+		return err
+	}
 	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(m).Error
 }
 
