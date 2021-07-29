@@ -246,7 +246,7 @@ func genJoinByRelation(tx *gorm.DB, relation string) {
 	if !ok {
 		panic(fmt.Sprintf("%s 中没有 %s 关联字段", tableName, relation))
 	}
-	if relationField.Type.Kind() == reflect.Slice {
+	if relationField.Type.Kind() == reflect.Slice || relationField.Type.Elem().Kind() == reflect.Slice {
 		relationType := qutil.GetDeepType(relationField.Type).String()
 		arr := strings.Split(relationType, ".")
 		relationType = arr[len(arr)-1]
