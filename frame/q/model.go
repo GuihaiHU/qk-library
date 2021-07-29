@@ -243,15 +243,15 @@ func genJoinByRelation(tx *gorm.DB, relation string) {
 	gormTag := relationField.Tag.Get("gorm")
 	tagMap := schema.ParseTagSetting(gormTag, ";")
 	many2manyTableName := tx.NamingStrategy.TableName(tagMap["MANY2MANY"])
-	columnName := tx.NamingStrategy.ColumnName("", relation)
+	// columnName := tx.NamingStrategy.ColumnName("", relation)
 
 	var joinName string
 	if many2manyTableName == "" {
-		// 表名按类型来，字段名按relation
-		joinName = fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, columnName, relation)
+		joinName = relation
+		// joinName = fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id` = `%s`.`id`", relationTableName, relation, tableName, columnName, relation)
 	} else {
 		joinName = fmt.Sprintf("LEFT JOIN `%s` `%s` ON `%s`.`%s_id`=`%s`.`id` LEFT JOIN `%s` `%s` ON `%s`.`id`=`%s`.`%s_id`",
-			many2manyTableName, many2manyTableName, many2manyTableName, tableName, columnName, relationTableName, relation, columnName, many2manyTableName, relationTableName)
+			many2manyTableName, many2manyTableName, many2manyTableName, tableName, tableName, relationTableName, relation, relation, many2manyTableName, relationTableName)
 	}
 
 	isContains := false
