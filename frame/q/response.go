@@ -1,20 +1,40 @@
 package q
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"unicode"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/iWinston/qk-library/frame/qservice"
 	"github.com/iWinston/qk-library/qutil"
+	"gorm.io/gorm"
 
 	"github.com/gogf/gf/net/ghttp"
 )
 
+func handleError(r *ghttp.Request, err error) {
+	qservice.ReqContext.SetError(r.Context(), err)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		JsonExit(r, 404, "数据不存在")
+	} else if err, ok := err.(*mysql.MySQLError); ok {
+		switch err.Number {
+		case 1062:
+			m := regexp.MustCompile(`Duplicate entry '(.*)' for.*`).FindStringSubmatch(err.Message)
+			JsonExit(r, 400, fmt.Sprintf("%s 已存在", m[1]))
+		case 1054:
+			JsonExit(r, 400, err.Error())
+		}
+	}
+	JsonExit(r, 1, err.Error())
+}
+
 func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64) {
 	if err != nil {
-		qservice.ReqContext.SetError(r.Context(), err)
-		JsonExit(r, 1, err.Error())
+		handleError(r, err)
 	} else {
 		JsonExit(r, 0, "ok", data, total)
 	}
@@ -22,8 +42,7 @@ func ResponseWithMeta(r *ghttp.Request, err error, data interface{}, total int64
 
 func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 	if err != nil {
-		qservice.ReqContext.SetError(r.Context(), err)
-		JsonExit(r, 1, err.Error())
+		handleError(r, err)
 	} else {
 		JsonExit(r, 0, "ok", data)
 	}
@@ -31,8 +50,7 @@ func ResponseWithData(r *ghttp.Request, err error, data interface{}) {
 
 func Response(r *ghttp.Request, err error) {
 	if err != nil {
-		qservice.ReqContext.SetError(r.Context(), err)
-		JsonExit(r, 1, err.Error())
+		handleError(r, err)
 	} else {
 		JsonExit(r, 0, "ok")
 	}
