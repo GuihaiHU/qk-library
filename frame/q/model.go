@@ -232,7 +232,7 @@ func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (column
 func genJoinByRelation(tx *gorm.DB, relation string) {
 	isContains := false
 	for _, join := range tx.Statement.Joins {
-		if join.Name == relation || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" ON") {
+		if join.Name == relation || strings.Contains(join.Name, relation+"` on") || strings.Contains(join.Name, relation+"` ON") || strings.Contains(join.Name, relation+" on") || strings.Contains(join.Name, relation+" ON") {
 			isContains = true
 			break
 		}
