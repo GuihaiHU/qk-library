@@ -41,19 +41,21 @@ func parseParamByTag(r *ghttp.Request, param interface{}) {
 		itemType := dtoType.Field(i)
 		itemValue := dtoValue.Field(i)
 
-		// 忽略 swagger:ignore 的值
-		ignoreTag := itemType.Tag.Get("swaggerignore")
-		if ignoreTag == "true" && !itemValue.IsNil() {
-			err := fmt.Errorf("不允许传递%s参数", itemType.Name)
-			g.Log("exception").Error(err)
-			JsonExit(r, 400, err.Error())
-		}
-
-		// 设置默认值
+		// 判断和默认值是否相同
+		eqDefaultValue := false
 		defaultTag, isTagExisted := itemType.Tag.Lookup("default")
 		if isTagExisted {
 			defaultValue := getDefaultValue(r, itemType.Type, defaultTag)
-			itemValue.Set(reflect.ValueOf(defaultValue))
+			eqDefaultValue = defaultValue == itemValue.Elem().Interface()
+		}
+
+		// swaggerignore:true
+		ignoreTag := itemType.Tag.Get("swaggerignore")
+		// 只允许传默认值或者不传
+		if ignoreTag == "true" && !itemValue.IsNil() && !eqDefaultValue {
+			err := fmt.Errorf("不允许传递%s参数", itemType.Name)
+			g.Log("exception").Error(err)
+			JsonExit(r, 400, err.Error())
 		}
 
 		// 通过ctx标签获取
@@ -62,24 +64,31 @@ func parseParamByTag(r *ghttp.Request, param interface{}) {
 			arr := strings.Split(ctxTag, ".")
 			ctxTagName := arr[0]
 			ctxVar := r.GetCtxVar(ctxTagName).Interface()
-			ctxVarRef := reflect.ValueOf(ctxVar)
-			if ctxVarRef.IsNil() {
-				err := fmt.Errorf("获取不到%s的值", ctxTag)
+			if ctxVar == nil {
+				err := fmt.Errorf("获取不到%s的值", ctxTagName)
 				g.Log("exception").Error(err)
 				JsonExit(r, 500, err.Error())
 			}
+			ctxVarRef := reflect.ValueOf(ctxVar)
 			if len(arr) == 1 {
 				itemValue.Set(ctxVarRef)
 			} else {
 				ctxFieldName := arr[1]
-				itemValue.Set(ctxVarRef.Elem().FieldByName(ctxFieldName))
+				// reflect.Value 的零值是 reflect.Invalid类型
+				ctxFieldValue := ctxVarRef.Elem().FieldByName(ctxFieldName)
+				if ctxFieldValue.Kind() == reflect.Invalid {
+					err := fmt.Errorf("获取不到%s的值", ctxTag)
+					g.Log("exception").Error(err)
+					JsonExit(r, 500, err.Error())
+				}
+				itemValue.Set(ctxFieldValue)
 			}
 		}
 	}
 }
 
 func getDefaultValue(r *ghttp.Request, typ reflect.Type, defaultTag string) (defaultValue interface{}) {
-	switch typ.Kind() {
+	switch typ.Elem().Kind() {
 	case reflect.String:
 		defaultValue = defaultTag
 	case reflect.Bool:
@@ -89,19 +98,26 @@ func getDefaultValue(r *ghttp.Request, typ reflect.Type, defaultTag string) (def
 		} else {
 			defaultValue = value
 		}
-	case reflect.Uint:
-		if value, err := strconv.ParseUint(defaultTag, 10, 64); err != nil {
+	case reflect.Int:
+		if value, err := strconv.ParseInt(defaultTag, 0, 64); err != nil {
 			g.Log("exception").Error(err)
 			JsonExit(r, 500, err.Error())
 		} else {
-			defaultValue = value
+			defaultValue = int(value)
+		}
+	case reflect.Uint:
+		if value, err := strconv.ParseUint(defaultTag, 0, 64); err != nil {
+			g.Log("exception").Error(err)
+			JsonExit(r, 500, err.Error())
+		} else {
+			defaultValue = uint(value)
 		}
 	case reflect.Float32:
 		if value, err := strconv.ParseFloat(defaultTag, 32); err != nil {
 			g.Log("exception").Error(err)
 			JsonExit(r, 500, err.Error())
 		} else {
-			defaultValue = value
+			defaultValue = float32(value)
 		}
 	case reflect.Float64:
 		if value, err := strconv.ParseFloat(defaultTag, 64); err != nil {
