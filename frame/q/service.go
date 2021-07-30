@@ -63,6 +63,7 @@ func Delete(tx *gorm.DB, m interface{}, param interface{}) error {
 }
 
 func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
+	GenSqlByParam(tx, param)
 	if err := Count(tx, param, total); err != nil {
 		return err
 	}
@@ -71,12 +72,11 @@ func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
 
 func Count(tx *gorm.DB, param interface{}, total *int64) error {
 	tx = tx.Session(&gorm.Session{})
-	GenSqlByParam(tx, param)
 	return tx.Count(total).Error
 }
 
 func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
-	GenSqlByParam(tx, param)
+	// GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
 
 	tx.Scopes(Paginate(param))
