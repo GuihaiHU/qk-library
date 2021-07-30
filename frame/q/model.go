@@ -197,7 +197,9 @@ func genCondition(sql *gorm.DB, name, operator string, itemValue interface{}) {
 	case "=":
 		sql.Where(name+" = ?", itemValue)
 	case ">":
+		sql.Where(name+" > ?", itemValue)
 	case "<":
+		sql.Where(name+" < ?", itemValue)
 	case "like":
 		sql.Where(name+" LIKE ?", "%"+*itemValue.(*string)+"%")
 	}
