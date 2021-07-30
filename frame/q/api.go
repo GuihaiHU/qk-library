@@ -42,8 +42,8 @@ func parseParamByTag(r *ghttp.Request, param interface{}) {
 		itemValue := dtoValue.Field(i)
 
 		// 忽略 swagger:ignore 的值
-		ignoreTag := itemType.Tag.Get("swagger")
-		if ignoreTag == "ignore" && !itemValue.IsNil() {
+		ignoreTag := itemType.Tag.Get("swaggerignore")
+		if ignoreTag == "true" && !itemValue.IsNil() {
 			err := fmt.Errorf("不允许传递%s参数", itemType.Name)
 			g.Log("exception").Error(err)
 			JsonExit(r, 400, err.Error())
