@@ -30,17 +30,26 @@ func AssignParamFormReq(r *ghttp.Request, param interface{}) {
 	}
 
 	// 解析标签
-	parseParamByTag(r, param)
-}
-
-func parseParamByTag(r *ghttp.Request, param interface{}) {
 	dtoType := reflect.TypeOf(param).Elem()
 	dtoValue := reflect.ValueOf(param).Elem()
+	parseParamByTag(r, dtoType, dtoValue)
+}
+
+func parseParamByTag(r *ghttp.Request, dtoType reflect.Type, dtoValue reflect.Value) {
 
 	for i := 0; i < dtoType.NumField(); i++ {
 		itemType := dtoType.Field(i)
 		itemValue := dtoValue.Field(i)
 
+		// 是匿名结构体，递归字段
+		if itemType.Anonymous && itemType.Tag.Get("select") != "_" {
+			if itemType.Type.Kind() == reflect.Ptr {
+				parseParamByTag(r, itemType.Type.Elem(), itemValue.Elem())
+			} else {
+				parseParamByTag(r, itemType.Type, itemValue)
+			}
+			continue
+		}
 		// 判断和默认值是否相同
 		eqDefaultValue := false
 		defaultTag, isTagExisted := itemType.Tag.Lookup("default")
@@ -76,7 +85,7 @@ func parseParamByTag(r *ghttp.Request, param interface{}) {
 				ctxFieldName := arr[1]
 				// reflect.Value 的零值是 reflect.Invalid类型
 				ctxFieldValue := ctxVarRef.Elem().FieldByName(ctxFieldName)
-				if ctxFieldValue.Kind() == reflect.Invalid {
+				if ctxFieldValue.Kind() == reflect.Invalid || ctxFieldValue.IsNil() {
 					err := fmt.Errorf("获取不到%s的值", ctxTag)
 					g.Log("exception").Error(err)
 					JsonExit(r, 500, err.Error())
