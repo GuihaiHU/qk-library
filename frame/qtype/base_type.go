@@ -1,6 +1,10 @@
 package qtype
 
-import "github.com/gogf/gf/util/gconv"
+import (
+	"time"
+
+	"github.com/gogf/gf/util/gconv"
+)
 
 func Str(v string) *string {
 	return &v
@@ -22,5 +26,10 @@ func Int(v interface{}) *int {
 
 func Uint(v interface{}) *uint {
 	t := uint(gconv.Int(v))
+	return &t
+}
+
+func Now() *time.Time {
+	t := time.Now()
 	return &t
 }
