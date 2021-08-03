@@ -147,7 +147,7 @@ func setOrderMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
 	var orderTag, isOrderTagExisted = item.Tag.Lookup("order")
 	if isOrderTagExisted {
 		if orderTag == "" {
-			orderTag = item.Name + "" + "desc"
+			orderTag = item.Name + " " + "desc"
 		} else {
 			orderTagArr := strings.Split(orderTag, ";")
 			if len(orderTagArr) == 1 {
@@ -181,7 +181,7 @@ func setSelectMeta(resMeta *meta, item reflect.StructField, tx *gorm.DB) {
 	selectTag := item.Tag.Get("select")
 	if selectTag != "_" {
 		columnName, relation := getColumnNameAndRelation(tx, item.Name, selectTag)
-		selectItem := columnName + " as " + item.Name
+		selectItem := columnName + " as `" + item.Name + "`"
 		resMeta.Selects = append(resMeta.Selects, selectItem)
 		if relation != "" {
 			resMeta.Joins = append(resMeta.Joins, relation)
@@ -215,16 +215,16 @@ func getColumnNameAndRelation(tx *gorm.DB, fieldName string, tag string) (column
 	)
 	// 为空代表没有tag，默认值是结构体的字段名
 	if tag == "" {
-		columnName = tableName + "." + tx.NamingStrategy.ColumnName("", fieldName)
+		columnName = "`" + tableName + "`.`" + tx.NamingStrategy.ColumnName("", fieldName) + "`"
 		return
 	}
 	// 长度1代表是自定义字段名
 	if len == 1 {
-		columnName = tableName + "." + tx.NamingStrategy.ColumnName("", arr[0])
+		columnName = "`" + tableName + "`.`" + tx.NamingStrategy.ColumnName("", arr[0]) + "`"
 	}
 	// 长度2代表是连表字段
 	if len == 2 {
-		columnName = arr[0] + "." + tx.NamingStrategy.ColumnName(arr[0], arr[1])
+		columnName = "`" + arr[0] + "`.`" + tx.NamingStrategy.ColumnName(arr[0], arr[1]) + "`"
 		relation = arr[0]
 	}
 	return

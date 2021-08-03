@@ -50,7 +50,7 @@ func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
 	if err := gconv.Struct(param, m); err != nil {
 		return err
 	}
-	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(m).Error
+	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Updates(param).Error
 }
 
 func Delete(tx *gorm.DB, m interface{}, param interface{}) error {
