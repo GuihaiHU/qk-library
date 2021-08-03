@@ -27,7 +27,17 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Take(res).Error
 	} else {
-		if err := tx.Take(tx.Statement.Model).Scan(res).Error; err != nil {
+		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
+		result := make(map[string]interface{})
+		if err := tx.Scan(&result).Error; err != nil {
+			return err
+		}
+		if err := gconv.StructDeep(result, res); err != nil {
+			return err
+		}
+
+		// 这里是为了防止select里不包含外键字段,所以select设置为*
+		if err := tx.Select("*").Take(tx.Statement.Model).Error; err != nil {
 			return err
 		}
 		return gconv.StructDeep(tx.Statement.Model, res)
@@ -84,11 +94,22 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Find(res).Error
 	} else {
-		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
-		arr := reflect.New(arrType).Interface()
-		if err := tx.Find(arr).Scan(res).Error; err != nil {
+		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
+		var results []map[string]interface{}
+		if err := tx.Scan(&results).Error; err != nil {
 			return err
 		}
-		return gconv.ScanDeep(arr, res)
+		if err := gconv.StructsDeep(results, res); err != nil {
+			return err
+		}
+
+		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
+		arr := reflect.New(arrType).Interface()
+		// 这里是为了防止select里不包含外键字段,所以select设置为*
+		if err := tx.Select("*").Find(arr).Error; err != nil {
+			return err
+		}
+
+		return gconv.StructsDeep(arr, res)
 	}
 }
