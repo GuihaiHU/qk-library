@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/gogf/gf/util/gconv"
+	"github.com/iWinston/qk-library/frame/qfield"
 	"gorm.io/gorm"
 )
 
@@ -24,12 +25,13 @@ func Find(tx *gorm.DB, dest interface{}, conds ...interface{}) error {
 func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	GenSqlByParam(tx, param)
 	GenSqlByRes(tx, res)
+	id := param.(qfield.IdParam).GetId()
 	if len(tx.Statement.Preloads) == 0 {
-		return tx.Take(res).Error
+		return tx.Take(res, id).Error
 	} else {
 		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
 		result := make(map[string]interface{})
-		if err := tx.Scan(&result).Error; err != nil {
+		if err := tx.Where(id).Scan(&result).Error; err != nil {
 			return err
 		}
 		if err := gconv.StructDeep(result, res); err != nil {
@@ -37,7 +39,7 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 		}
 
 		// 这里是为了防止select里不包含外键字段,所以select设置为*
-		if err := tx.Select("*").Take(tx.Statement.Model).Error; err != nil {
+		if err := tx.Select("*").Take(tx.Statement.Model, id).Error; err != nil {
 			return err
 		}
 		return gconv.StructDeep(tx.Statement.Model, res)
@@ -53,7 +55,8 @@ func Post(tx *gorm.DB, m interface{}, param interface{}) error {
 
 func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
 	GenSqlByParam(tx, param)
-	err := tx.Take(m).Error
+	id := param.(qfield.IdParam).GetId()
+	err := tx.Take(m, id).Error
 	if err != nil {
 		return err
 	}
@@ -65,11 +68,12 @@ func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
 
 func Delete(tx *gorm.DB, m interface{}, param interface{}) error {
 	GenSqlByParam(tx, param)
-	err := tx.Take(m).Error
+	id := param.(qfield.IdParam).GetId()
+	err := tx.Take(m, id).Error
 	if err != nil {
 		return err
 	}
-	return tx.Delete(m).Error
+	return tx.Delete(m, id).Error
 }
 
 func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {
