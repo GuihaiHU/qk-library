@@ -30,20 +30,22 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Take(res, id).Error
 	} else {
+		// 这里是为了防止select里不包含外键字段,所以select设置为空，Take启动智能select所有字段
+		preloadTx := tx.Session(&gorm.Session{})
+		preloadTx.Statement.Selects = []string{}
+		if err := preloadTx.Take(preloadTx.Statement.Model, id).Error; err != nil {
+			return err
+		}
+		if err := gconv.StructDeep(preloadTx.Statement.Model, res); err != nil {
+			return err
+		}
+
 		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
 		result := make(map[string]interface{})
 		if err := tx.Where(id).Scan(&result).Error; err != nil {
 			return err
 		}
-		if err := gconv.StructDeep(result, res); err != nil {
-			return err
-		}
-
-		// 这里是为了防止select里不包含外键字段,所以select设置为*
-		if err := tx.Select("*").Take(tx.Statement.Model, id).Error; err != nil {
-			return err
-		}
-		return gconv.StructDeep(tx.Statement.Model, res)
+		return gconv.StructDeep(result, res)
 	}
 }
 
@@ -113,22 +115,23 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 	if len(tx.Statement.Preloads) == 0 {
 		return tx.Find(res).Error
 	} else {
+		// 这里是为了防止select里不包含外键字段,所以select设置为空，Find启动智能select所有字段
+		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
+		arr := reflect.New(arrType).Interface()
+		preloadTx := tx.Session(&gorm.Session{})
+		preloadTx.Statement.Selects = []string{}
+		if err := preloadTx.Find(arr).Error; err != nil {
+			return err
+		}
+		if err := gconv.StructDeep(arr, res); err != nil {
+			return err
+		}
+
 		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
 		var results []map[string]interface{}
 		if err := tx.Scan(&results).Error; err != nil {
 			return err
 		}
-		if err := gconv.StructsDeep(results, res); err != nil {
-			return err
-		}
-
-		arrType := reflect.SliceOf(reflect.TypeOf(tx.Statement.Model).Elem())
-		arr := reflect.New(arrType).Interface()
-		// 这里是为了防止select里不包含外键字段,所以select设置为*
-		if err := tx.Select("*").Find(arr).Error; err != nil {
-			return err
-		}
-
-		return gconv.StructsDeep(arr, res)
+		return gconv.StructsDeep(results, res)
 	}
 }
