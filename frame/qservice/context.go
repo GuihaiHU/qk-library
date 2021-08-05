@@ -4,6 +4,7 @@ import (
 	"context"
 
 	model "github.com/iWinston/qk-library/frame/qmodel"
+	"github.com/iWinston/qk-library/qutil"
 
 	"github.com/gogf/gf/net/ghttp"
 	"gorm.io/gorm"
@@ -17,6 +18,8 @@ type reqContextService struct{}
 // 初始化上下文对象指针到上下文对象中，以便后续的请求流程中可以修改。
 func (s *reqContextService) Init(r *ghttp.Request, ctx *model.ReqContext) {
 	r.SetCtxVar(model.ContextKey, ctx)
+	rCtx := r.Context()
+	ctx.RCtx = rCtx
 }
 
 // 获得上下文变量，如果没有设置，那么返回nil
@@ -90,4 +93,54 @@ func (s *reqContextService) GetData(ctx context.Context, key string) interface{}
 		return nil
 	}
 	return v
+}
+
+// SetBeforeModel 设置操作之前的Model
+func (s *reqContextService) SetBeforeModel(ctx context.Context, result interface{}) {
+	qCtx := s.Get(ctx)
+	if qCtx != nil {
+		beforeMap := qutil.StructToMap(result)
+		qCtx.ActionHistory.Before = &beforeMap
+	}
+
+}
+
+// SetBeforeModel 根据TX设置操作之前的Model
+func (s *reqContextService) SetBeforeModelByTx(tx *gorm.DB, result interface{}) {
+	if tx.Statement.Context != nil {
+		s.SetBeforeModel(tx.Statement.Context, result)
+	}
+}
+
+// SetBeforeModel 设置操作之后的Model
+func (s *reqContextService) SetAfterModel(ctx context.Context, result interface{}) {
+	qCtx := s.Get(ctx)
+	if qCtx != nil {
+		afterMap := qutil.StructToMap(result)
+		qCtx.ActionHistory.After = &afterMap
+	}
+
+}
+
+// SetAfterModel 根据TX设置操作之后的Model
+func (s *reqContextService) SetAfterModelByTx(tx *gorm.DB, result interface{}) {
+	if tx.Statement.Context != nil {
+		s.SetAfterModel(tx.Statement.Context, result)
+	}
+}
+
+// SetRowsAffected 设置操作影响行数
+func (s *reqContextService) SetRowsAffected(ctx context.Context, rowsAffected uint) {
+	qCtx := s.Get(ctx)
+	if qCtx != nil {
+		qCtx.ActionHistory.RowsAffected = rowsAffected
+	}
+
+}
+
+// SetRowsAffectedByTx 根据Tx设置操作影响行数
+func (s *reqContextService) SetRowsAffectedByTx(tx *gorm.DB) {
+	if tx.Statement.Context != nil {
+		s.SetRowsAffected(tx.Statement.Context, uint(tx.Statement.RowsAffected))
+	}
 }

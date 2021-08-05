@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogf/gf/util/gconv"
 	"github.com/iWinston/qk-library/frame/qfield"
+	"github.com/iWinston/qk-library/frame/qservice"
 	"gorm.io/gorm"
 )
 
@@ -46,34 +47,48 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 	}
 }
 
-func Post(tx *gorm.DB, m interface{}, param interface{}) error {
-	if err := gconv.Struct(param, m); err != nil {
+func Post(tx *gorm.DB, m interface{}, param interface{}) (err error) {
+	if err = gconv.Struct(param, m); err != nil {
 		return err
 	}
-	return tx.Create(m).Error
+	if err = tx.Create(m).Error; err != nil {
+		return err
+	}
+	qservice.ReqContext.SetAfterModelByTx(tx, m)
+	qservice.ReqContext.SetRowsAffectedByTx(tx)
+	return
 }
 
-func Patch(tx *gorm.DB, m interface{}, param interface{}) error {
+func Patch(tx *gorm.DB, m interface{}, param interface{}) (err error) {
 	GenSqlByParam(tx, param)
 	id := param.(qfield.IdParam).GetId()
-	err := tx.Take(m, id).Error
-	if err != nil {
-		return err
+	if err = tx.Take(m, id).Error; err != nil {
+		return
 	}
-	if err := gconv.Struct(param, m); err != nil {
-		return err
+	qservice.ReqContext.SetBeforeModelByTx(tx, m)
+	if err = gconv.Struct(param, m); err != nil {
+		return
 	}
-	return tx.Session(&gorm.Session{FullSaveAssociations: true}).Updates(m).Error
+	if err = tx.Session(&gorm.Session{FullSaveAssociations: true}).Updates(m).Error; err != nil {
+		return
+	}
+	qservice.ReqContext.SetAfterModelByTx(tx, m)
+	qservice.ReqContext.SetRowsAffectedByTx(tx)
+	return
 }
 
-func Delete(tx *gorm.DB, m interface{}, param interface{}) error {
+func Delete(tx *gorm.DB, m interface{}, param interface{}) (err error) {
 	GenSqlByParam(tx, param)
 	id := param.(qfield.IdParam).GetId()
-	err := tx.Take(m, id).Error
-	if err != nil {
+	if err = tx.Take(m, id).Error; err != nil {
 		return err
 	}
-	return tx.Delete(m, id).Error
+	qservice.ReqContext.SetBeforeModelByTx(tx, m)
+	if err = tx.Delete(m, id).Error; err != nil {
+		return err
+	}
+	qservice.ReqContext.SetRowsAffectedByTx(tx)
+	return
 }
 
 func List(tx *gorm.DB, param interface{}, res interface{}, total *int64) error {

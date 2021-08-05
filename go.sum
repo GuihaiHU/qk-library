@@ -16,6 +16,8 @@ github.com/gomodule/redigo v2.0.0+incompatible/go.mod h1:B4C85qUVwatsJoIUNIfCRsp
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/gorilla/websocket v1.4.1 h1:q7AeDBpnBk8AogcD4DSag/Ukw/KV+YhzLj2bP5HvKCM=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/gqcn/structs v1.1.1 h1:cyzGRwfmn3d1d54fwW3KUNyG9QxR0ldIeqwFGeBt638=
+github.com/gqcn/structs v1.1.1/go.mod h1:/aBhTBSsKQ2Ec9pbnYdGphtdWXHFn4KrCL0fXM/Adok=
 github.com/grokify/html-strip-tags-go v0.0.0-20190921062105-daaa06bf1aaf h1:wIOAyJMMen0ELGiFzlmqxdcV1yGbkyHBAB6PolcNbLA=
 github.com/grokify/html-strip-tags-go v0.0.0-20190921062105-daaa06bf1aaf/go.mod h1:2Su6romC5/1VXOQMaWL2yb618ARB8iVo6/DR99A6d78=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=

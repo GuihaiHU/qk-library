@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"strings"
 
 	"github.com/gogf/gf/frame/g"
 )
@@ -51,4 +52,14 @@ func RandomStr(len int) string {
 		result = append(result, byte(65+rand.Intn(25)))
 	}
 	return string(result[:])
+}
+
+func JoinNotEmptyStr(strArr []string, sep string) string {
+	newArr := []string{}
+	for _, str := range strArr {
+		if str != "" {
+			newArr = append(newArr, str)
+		}
+	}
+	return strings.Join(newArr, sep)
 }
