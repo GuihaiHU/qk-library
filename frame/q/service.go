@@ -37,7 +37,7 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 			return err
 		}
 		if err := gconv.StructDeep(preloadTx.Statement.Model, res); err != nil {
-			return err
+			panic(err)
 		}
 
 		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
@@ -45,7 +45,11 @@ func Get(tx *gorm.DB, param interface{}, res interface{}) error {
 		if err := tx.Where(id).Scan(&result).Error; err != nil {
 			return err
 		}
-		return gconv.StructDeep(result, res)
+
+		if err := gconv.StructDeep(result, res); err != nil {
+			panic(err)
+		}
+		return nil
 	}
 }
 
@@ -123,8 +127,8 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 		if err := preloadTx.Find(arr).Error; err != nil {
 			return err
 		}
-		if err := gconv.StructDeep(arr, res); err != nil {
-			return err
+		if err := gconv.StructsDeep(arr, res); err != nil {
+			panic(err)
 		}
 
 		// TODO 判断是否有select别名字段或者外键字段，当有的时候才select
@@ -132,6 +136,9 @@ func FindWithPaginate(tx *gorm.DB, param interface{}, res interface{}) error {
 		if err := tx.Scan(&results).Error; err != nil {
 			return err
 		}
-		return gconv.StructsDeep(results, res)
+		if err := gconv.StructsDeep(results, res); err != nil {
+			panic(err)
+		}
+		return nil
 	}
 }
