@@ -45,7 +45,7 @@ func (s *Domain) parseParam(parser *gcmd.Parser, action Action) g.MapStrStr {
 		} else {
 			value := parser.GetOpt(key)
 			if action.Params[i].Required && value == "" {
-				panic("缺少参数[" + key + "]")
+				panic(s.DomainName + "缺少参数[" + key + "]" + fmt.Sprintf("%v", action.Params))
 			} else {
 				params[key] = value
 			}
